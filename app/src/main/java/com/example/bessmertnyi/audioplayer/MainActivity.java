@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     private Intent playIntent;
     private boolean musicBound=false;
     private boolean doubleBackToExitPressedOnce = false;
+    private MusicController controller;
 
     @Override
     protected void onStart() {
@@ -85,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
         SongAdapter songAdt = new SongAdapter(this, songList);
         songView.setAdapter(songAdt);
+        setController();
 
     }
 
@@ -237,33 +239,73 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         }
     }
 
+    private void playNext(){
+        musicSrv.playNext();
+        controller.show(0);
+    }
+
+    private void playPrev(){
+        musicSrv.playPrev();
+        controller.show(0);
+    }
+
+    private void setController(){
+        controller = new MusicController(this);
+        controller.setPrevNextListeners(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playNext();
+            }
+        }, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playPrev();
+            }
+        });
+
+        controller.setMediaPlayer(this);
+        controller.setAnchorView(findViewById(R.id.song_list));
+        controller.setEnabled(true);
+    }
+
     @Override
     public void start() {
-        
+        musicSrv.go();
     }
 
     @Override
     public void pause() {
-
+        musicSrv.pausePlayer();
     }
 
     @Override
     public int getDuration() {
-        return 0;
+        if(musicSrv!=null && musicBound && musicSrv.isPng()) {
+            return musicSrv.getDur();
+        }else {
+            return 0;
+        }
     }
 
     @Override
     public int getCurrentPosition() {
-        return 0;
+        if(musicSrv!=null && musicBound && musicSrv.isPng()) {
+            return musicSrv.getPosn();
+        }else {
+            return 0;
+        }
     }
 
     @Override
     public void seekTo(int pos) {
-
+        musicSrv.seek(pos);
     }
 
     @Override
     public boolean isPlaying() {
+        if(musicSrv!=null && musicBound){
+            return musicSrv.isPng();
+        }
         return false;
     }
 
@@ -274,17 +316,17 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
     @Override
     public boolean canPause() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean canSeekBackward() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean canSeekForward() {
-        return false;
+        return true;
     }
 
     @Override
