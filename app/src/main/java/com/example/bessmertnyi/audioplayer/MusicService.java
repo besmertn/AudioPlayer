@@ -93,11 +93,7 @@ public class MusicService extends Service implements
     }
 
     public void setShuffle(){
-        if(shuffle) {
-            shuffle = false;
-        } else {
-            shuffle = true;
-        }
+        shuffle = !shuffle;
     }
 
     public void initMusicPlayer(){

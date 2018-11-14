@@ -215,6 +215,9 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
             }
             while (musicCursor.moveToNext());
         }
+       if(musicCursor != null) {
+           musicCursor.close();
+       }
     }
 
     // Creating Runtime permission function.
