@@ -9,5 +9,11 @@ public class MusicController extends MediaController {
         super(c);
     }
 
-    public void hide(){}
+    public void hide(){
+
+    }
+
+    public void forceHide(){
+        super.hide();
+    }
 }

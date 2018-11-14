@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentUris;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -46,7 +47,7 @@ public class MusicService extends Service implements
     @Override
     public void onCreate() {
         super.onCreate();
-        rand=new Random();
+        rand = new Random();
         songPosn=0;
         player = new MediaPlayer();
         initMusicPlayer();
@@ -83,6 +84,7 @@ public class MusicService extends Service implements
 
         builder.setContentIntent(pendInt)
                 .setSmallIcon(R.drawable.ic_play_arrow)
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.ic_play_arrow))
                 .setTicker(songTitle)
                 .setOngoing(true)
                 .setContentTitle("Playing")

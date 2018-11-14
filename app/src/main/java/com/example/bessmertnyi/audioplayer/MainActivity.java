@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        AndroidRuntimePermission();
+        this.AndroidRuntimePermission();
 
         songView = findViewById(R.id.song_list);
         songList = new ArrayList<>();
@@ -288,6 +288,9 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     }
 
     private void setController(){
+        if(controller != null) {
+            controller.forceHide();
+        }
         controller = new MusicController(this);
         controller.setPrevNextListeners(new View.OnClickListener() {
             @Override
@@ -308,6 +311,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
     @Override
     public void start() {
+        playbackPaused = false;
         musicSrv.go();
     }
 
@@ -321,7 +325,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     public int getDuration() {
         if(musicSrv!=null && musicBound && musicSrv.isPng()) {
             return musicSrv.getDur();
-        }else {
+        } else {
             return 0;
         }
     }
