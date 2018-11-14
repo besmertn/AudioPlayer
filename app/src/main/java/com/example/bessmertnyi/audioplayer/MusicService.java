@@ -1,5 +1,7 @@
 package com.example.bessmertnyi.audioplayer;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentUris;
 import android.content.Intent;
@@ -18,14 +20,12 @@ public class MusicService extends Service implements
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener,
         MediaPlayer.OnCompletionListener {
 
-    //media player
     private MediaPlayer player;
-    //song list
     private ArrayList<Song> songs;
-    //current position
     private int songPosn;
-
     private final IBinder musicBind = new MusicBinder();
+    private String songTitle = "";
+    private static final int NOTIFY_ID = 1;
 
     @Nullable
     @Override
@@ -50,6 +50,11 @@ public class MusicService extends Service implements
     }
 
     @Override
+    public void onDestroy() {
+        stopForeground(true);
+    }
+
+    @Override
     public void onCompletion(MediaPlayer mp) {
 
     }
@@ -61,8 +66,23 @@ public class MusicService extends Service implements
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        //start playback
         mp.start();
+        Intent notIntent = new Intent(this, MainActivity.class);
+        notIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendInt = PendingIntent.getActivity(this, 0,
+                notIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification.Builder builder = new Notification.Builder(this);
+
+        builder.setContentIntent(pendInt)
+                .setSmallIcon(R.drawable.ic_play_arrow)
+                .setTicker(songTitle)
+                .setOngoing(true)
+                .setContentTitle("Playing")
+                .setContentText(songTitle);
+        Notification not = builder.build();
+
+        startForeground(NOTIFY_ID, not);
     }
 
     public void initMusicPlayer(){
@@ -81,11 +101,9 @@ public class MusicService extends Service implements
 
     public void playSong(){
         player.reset();
-        //get song
         Song playSong = songs.get(songPosn);
-        //get id
+        songTitle = playSong.getTitle();
         long currSong = playSong.getID();
-        //set uri
         Uri trackUri = ContentUris.withAppendedId(
                 android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 currSong);
@@ -115,6 +133,7 @@ public class MusicService extends Service implements
         }
         playSong();
     }
+
 
     public void playNext(){
         songPosn++;
