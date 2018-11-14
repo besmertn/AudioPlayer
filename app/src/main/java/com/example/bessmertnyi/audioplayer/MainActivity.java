@@ -1,29 +1,27 @@
 package com.example.bessmertnyi.audioplayer;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import android.net.Uri;
-import android.content.ContentResolver;
-import android.database.Cursor;
+import android.telephony.TelephonyManager;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -32,9 +30,15 @@ import android.widget.ListView;
 import android.widget.MediaController;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+
 public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl {
 
     private static final int RUNTIME_PERMISSION_CODE = 1;
+    private static final int PHONE_STATE_PERMISSION_CODE = 2;
     private ArrayList<Song> songList;
     private ListView songView;
     private MusicService musicSrv;
@@ -43,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     private boolean doubleBackToExitPressedOnce = false;
     private MusicController controller;
     private boolean paused = false, playbackPaused = false;
+    private BroadcastReceiver phoneReceiver;
 
     @Override
     protected void onStart() {
@@ -63,6 +68,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         }
         stopService(playIntent);
         musicSrv = null;
+        unregisterReceiver(phoneReceiver);
         super.onDestroy();
     }
 
@@ -93,6 +99,33 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         setContentView(R.layout.activity_main);
 
         this.AndroidRuntimePermission();
+
+        phoneReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                try {
+                    System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+                    String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
+                    if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
+                        Toast.makeText(context, "Ringing State ", Toast.LENGTH_SHORT).show();
+                        pause();
+                    }
+                    if ((state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK))) {
+                        Toast.makeText(context, "Received State", Toast.LENGTH_SHORT).show();
+                    }
+                    if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
+                        Toast.makeText(context, "Idle State", Toast.LENGTH_SHORT).show();
+                        start();
+                    }
+                } catch (Exception e) {
+                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    e.printStackTrace();
+                }
+            }
+        };
+        IntentFilter intentFIlter = new IntentFilter("android.intent.action.PHONE_STATE");
+
+        this.registerReceiver(phoneReceiver, intentFIlter);
 
         songView = findViewById(R.id.song_list);
         songList = new ArrayList<>();
@@ -254,12 +287,52 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
                 );
             }
         }
+
+        if (checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+
+            if (shouldShowRequestPermissionRationale(Manifest.permission.READ_PHONE_STATE)) {
+
+                AlertDialog.Builder alert_builder = new AlertDialog.Builder(MainActivity.this);
+                alert_builder.setMessage("Phone State Permission is Required.");
+                alert_builder.setTitle("Please Grant Permission.");
+                alert_builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                        ActivityCompat.requestPermissions(
+                                MainActivity.this,
+                                new String[]{Manifest.permission.READ_PHONE_STATE},
+                                PHONE_STATE_PERMISSION_CODE
+                        );
+                    }
+                });
+
+                alert_builder.setNeutralButton("Cancel", null);
+                AlertDialog dialog = alert_builder.create();
+                dialog.show();
+            } else {
+                ActivityCompat.requestPermissions(
+                        MainActivity.this,
+                        new String[]{Manifest.permission.READ_PHONE_STATE},
+                        PHONE_STATE_PERMISSION_CODE
+                );
+            }
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case RUNTIME_PERMISSION_CODE: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+
+                }
+            }
+
+            case PHONE_STATE_PERMISSION_CODE: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                 } else {
