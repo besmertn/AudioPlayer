@@ -42,11 +42,12 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     private boolean musicBound=false;
     private boolean doubleBackToExitPressedOnce = false;
     private MusicController controller;
+    private boolean paused = false, playbackPaused = false;
 
     @Override
     protected void onStart() {
         super.onStart();
-        if(playIntent==null){
+        if(playIntent == null){
             playIntent = new Intent(this, MusicService.class);
             startService(playIntent);
             bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
@@ -61,8 +62,29 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
             unbindService(musicConnection);
         }
         stopService(playIntent);
-        musicSrv=null;
+        musicSrv = null;
         super.onDestroy();
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        paused = true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(paused){
+            setController();
+            paused = false;
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        controller.hide();
+        super.onStop();
     }
 
     @Override
@@ -93,6 +115,11 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     public void songPicked(View view){
         musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
         musicSrv.playSong();
+        if(playbackPaused){
+            setController();
+            playbackPaused = false;
+        }
+        controller.show(0);
     }
 
     @Override
@@ -241,11 +268,19 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
     private void playNext(){
         musicSrv.playNext();
+        if(playbackPaused){
+            setController();
+            playbackPaused = false;
+        }
         controller.show(0);
     }
 
     private void playPrev(){
         musicSrv.playPrev();
+        if(playbackPaused){
+            setController();
+            playbackPaused = false;
+        }
         controller.show(0);
     }
 
@@ -275,6 +310,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
     @Override
     public void pause() {
+        playbackPaused = true;
         musicSrv.pausePlayer();
     }
 
