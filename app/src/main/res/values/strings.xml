@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">AudioPlayer</string>
     <string name="example">Example</string>
+    <string name="default_duration">00:00</string>>
 </resources>

@@ -49,10 +49,9 @@ public class MainActivity extends AppCompatActivity {
     private ListView songView;
     private MusicService musicSrv;
     private Intent playIntent;
-    private boolean musicBound=false;
+    private boolean musicBound = false;
     private boolean doubleBackToExitPressedOnce = false;
-    private MusicController controller;
-    private boolean paused = false, playbackPaused = false;
+    private boolean paused = false, playbackPaused = true;
     private BroadcastReceiver phoneReceiver;
     private ImageButton playBatton;
     private ImageButton skipPrevButton;
@@ -67,10 +66,9 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         if(playIntent == null){
             playIntent = new Intent(this, MusicService.class);
+            musicSrv = new MusicService();
             startService(playIntent);
             bindService(playIntent, musicConnection, Context.BIND_AUTO_CREATE);
-
-
         }
     }
 
@@ -84,28 +82,6 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(phoneReceiver);
         super.onDestroy();
     }
-
-    @Override
-    protected void onPause(){
-        super.onPause();
-        paused = true;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if(paused){
-           // setController();
-            paused = false;
-        }
-    }
-
-    @Override
-    protected void onStop() {
-        controller.hide();
-        super.onStop();
-    }
-
 
 
     @Override
@@ -214,6 +190,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        skipNextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                musicSrv.playNext();
+                if(MainActivity.this.playbackPaused) {
+                    playbackPaused = false;
+                    playBatton.setImageDrawable(getDrawable(R.drawable.ic_pause));
+                }
+                startSong();
+            }
+        });
+
+        skipPrevButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                musicSrv.playPrev();
+                if(MainActivity.this.playbackPaused) {
+                    playbackPaused = false;
+                    playBatton.setImageDrawable(getDrawable(R.drawable.ic_pause));
+                }
+                startSong();
+            }
+        });
 
 
     }
@@ -221,40 +220,50 @@ public class MainActivity extends AppCompatActivity {
     public void play(){
         if(playbackPaused){
             playbackPaused = false;
-            playBatton.setImageDrawable(getDrawable(R.drawable.ic_play_arrow));
-            musicSrv.pausePlayer();
-        } else {
-            playbackPaused = true;
             playBatton.setImageDrawable(getDrawable(R.drawable.ic_pause));
             musicSrv.go();
+            startSong();
+
+        } else {
+            playbackPaused = true;
+            playBatton.setImageDrawable(getDrawable(R.drawable.ic_play_arrow));
+            musicSrv.pausePlayer();
         }
+    }
 
-
+    private void startSong() {
         MainActivity.this.runOnUiThread(new Runnable() {
 
             @Override
             public void run() {
-                if(musicSrv != null){
+                if(musicSrv != null ){
                     int mCurrentPosition = musicSrv.getPosn();
                     seekBar.setProgress(mCurrentPosition / 1000);
                     int millisMax = musicSrv.getDur();
                     seekBar.setMax(millisMax / 1000);
+
+
 
                     String durationTime = String.format("%02d:%02d",
                             TimeUnit.MILLISECONDS.toMinutes(millisMax),
                             TimeUnit.MILLISECONDS.toSeconds(millisMax) -
                                     TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisMax))
                     );
-                    maxTimeTextView.setText(durationTime);
 
-                    int millisCurr = musicSrv.getPosn();
+
+
                     String currentTime = String.format("%02d:%02d",
-                            TimeUnit.MILLISECONDS.toMinutes(millisCurr),
-                            TimeUnit.MILLISECONDS.toSeconds(millisCurr) -
-                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisCurr))
+                            TimeUnit.MILLISECONDS.toMinutes(mCurrentPosition),
+                            TimeUnit.MILLISECONDS.toSeconds(mCurrentPosition) -
+                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(mCurrentPosition))
                     );
 
+                    if(durationTime.equals(currentTime) && !durationTime.equals("00:00") ) {
+                        musicSrv.playNext();
+                    }
+
                     currTimeTextView.setText(currentTime);
+                    maxTimeTextView.setText(durationTime);
                 }
                 mHandler.postDelayed(this, 1000);
             }
