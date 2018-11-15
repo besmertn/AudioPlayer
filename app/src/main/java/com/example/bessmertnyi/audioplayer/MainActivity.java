@@ -21,21 +21,27 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatSeekBar;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.MediaController;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends AppCompatActivity implements MediaController.MediaPlayerControl {
+public class MainActivity extends AppCompatActivity {
 
     private static final int RUNTIME_PERMISSION_CODE = 1;
     private static final int PHONE_STATE_PERMISSION_CODE = 2;
@@ -48,6 +54,13 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     private MusicController controller;
     private boolean paused = false, playbackPaused = false;
     private BroadcastReceiver phoneReceiver;
+    private ImageButton playBatton;
+    private ImageButton skipPrevButton;
+    private ImageButton skipNextButton;
+    private AppCompatSeekBar seekBar;
+    private TextView currTimeTextView;
+    private TextView maxTimeTextView;
+    private Handler mHandler = new Handler();
 
     @Override
     protected void onStart() {
@@ -82,7 +95,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     protected void onResume() {
         super.onResume();
         if(paused){
-            setController();
+           // setController();
             paused = false;
         }
     }
@@ -93,12 +106,21 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         super.onStop();
     }
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         this.AndroidRuntimePermission();
+
+        playBatton = findViewById(R.id.playImageButton);
+        skipPrevButton = findViewById(R.id.skipPrevImageButton);
+        skipNextButton = findViewById(R.id.skipNextImageButton);
+        seekBar = findViewById(R.id.seekBar);
+        currTimeTextView = findViewById(R.id.curr_duration_text_view);
+        maxTimeTextView = findViewById(R.id.max_duration_text_view);
 
         phoneReceiver = new BroadcastReceiver() {
             @Override
@@ -108,14 +130,14 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
                     String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
                     if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
                         Toast.makeText(context, "Ringing State ", Toast.LENGTH_SHORT).show();
-                        pause();
+                       // pause();
                     }
                     if ((state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK))) {
                         Toast.makeText(context, "Received State", Toast.LENGTH_SHORT).show();
                     }
                     if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
                         Toast.makeText(context, "Idle State", Toast.LENGTH_SHORT).show();
-                        start();
+                       // start();
                     }
                 } catch (Exception e) {
                     System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -141,18 +163,108 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
 
         SongAdapter songAdt = new SongAdapter(this, songList);
         songView.setAdapter(songAdt);
-        setController();
+        //setController();
 
+        playBatton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                play();
+            }
+        });
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int seeked_progess;
+            @Override
+            public void onProgressChanged(final SeekBar seek, int progress, boolean fromUser) {
+                seeked_progess = progress;
+                seeked_progess = seeked_progess * 1000;
+
+                if (fromUser) {
+                    Runnable mRunnable = new Runnable() {
+
+                        @Override
+                        public void run() {
+                            int min, sec;
+
+                            if (musicSrv != null ) {
+                                int mCurrentPosition = seekBar.getProgress();
+
+                                min = mCurrentPosition / 60;
+                                sec = mCurrentPosition % 60;
+
+                                Log.e("Music Player Activity", "Minutes : "+min +" Seconds : " + sec);
+                            }
+                            mHandler.postDelayed(this, 1000);
+
+                        }
+                    };
+                    mRunnable.run();}
+                }
+
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                musicSrv.seek(seeked_progess);
+
+            }
+        });
+
+
+
+    }
+
+    public void play(){
+        if(playbackPaused){
+            playbackPaused = false;
+            playBatton.setImageDrawable(getDrawable(R.drawable.ic_play_arrow));
+            musicSrv.pausePlayer();
+        } else {
+            playbackPaused = true;
+            playBatton.setImageDrawable(getDrawable(R.drawable.ic_pause));
+            musicSrv.go();
+        }
+
+
+        MainActivity.this.runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                if(musicSrv != null){
+                    int mCurrentPosition = musicSrv.getPosn();
+                    seekBar.setProgress(mCurrentPosition / 1000);
+                    int millisMax = musicSrv.getDur();
+                    seekBar.setMax(millisMax / 1000);
+
+                    String durationTime = String.format("%02d:%02d",
+                            TimeUnit.MILLISECONDS.toMinutes(millisMax),
+                            TimeUnit.MILLISECONDS.toSeconds(millisMax) -
+                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisMax))
+                    );
+                    maxTimeTextView.setText(durationTime);
+
+                    int millisCurr = musicSrv.getPosn();
+                    String currentTime = String.format("%02d:%02d",
+                            TimeUnit.MILLISECONDS.toMinutes(millisCurr),
+                            TimeUnit.MILLISECONDS.toSeconds(millisCurr) -
+                                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisCurr))
+                    );
+
+                    currTimeTextView.setText(currentTime);
+                }
+                mHandler.postDelayed(this, 1000);
+            }
+        });
     }
 
     public void songPicked(View view){
         musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
         musicSrv.playSong();
-        if(playbackPaused){
-            setController();
-            playbackPaused = false;
-        }
-        controller.show(0);
+        play();
     }
 
     @Override
@@ -216,6 +328,8 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
             musicBound = false;
         }
     };
+
+
 
     public void getSongList() {
         Bitmap bitmap = BitmapFactory.decodeResource(getResources() ,R.drawable.ic_music_note);
@@ -342,7 +456,7 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
         }
     }
 
-    private void playNext(){
+    /*private void playNext(){
         musicSrv.playNext();
         if(playbackPaused){
             setController();
@@ -358,9 +472,9 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
             playbackPaused = false;
         }
         controller.show(0);
-    }
+    }*/
 
-    private void setController(){
+    /*private void setController(){
         if(controller != null) {
             controller.forceHide();
         }
@@ -448,5 +562,5 @@ public class MainActivity extends AppCompatActivity implements MediaController.M
     @Override
     public int getAudioSessionId() {
         return 0;
-    }
+    }*/
 }
