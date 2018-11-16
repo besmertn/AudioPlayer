@@ -222,13 +222,13 @@ public class MainActivity extends AppCompatActivity {
             playbackPaused = false;
             playBatton.setImageDrawable(getDrawable(R.drawable.ic_pause));
             musicSrv.go();
-            startSong();
 
         } else {
             playbackPaused = true;
             playBatton.setImageDrawable(getDrawable(R.drawable.ic_play_arrow));
             musicSrv.pausePlayer();
         }
+        startSong();
     }
 
     private void startSong() {
@@ -258,9 +258,9 @@ public class MainActivity extends AppCompatActivity {
                                     TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(mCurrentPosition))
                     );
 
-                    if(durationTime.equals(currentTime) && !durationTime.equals("00:00") ) {
+                   /* if(durationTime.equals(currentTime) && !durationTime.equals("00:00") ) {
                         musicSrv.playNext();
-                    }
+                    }*/
 
                     currTimeTextView.setText(currentTime);
                     maxTimeTextView.setText(durationTime);
@@ -273,7 +273,9 @@ public class MainActivity extends AppCompatActivity {
     public void songPicked(View view){
         musicSrv.setSong(Integer.parseInt(view.getTag().toString()));
         musicSrv.playSong();
-        play();
+        playBatton.setImageDrawable(getDrawable(R.drawable.ic_pause));
+        playbackPaused = false;
+        startSong();
     }
 
     @Override
