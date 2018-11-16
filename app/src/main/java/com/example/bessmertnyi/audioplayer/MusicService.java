@@ -30,8 +30,7 @@ public class MusicService extends Service implements
     private final IBinder musicBind = new MusicBinder();
     private String songTitle = "";
     private static final int NOTIFY_ID = 1;
-    private boolean shuffle=false;
-    private Random rand;
+    private boolean shuffle = false;
 
     @Nullable
     @Override
@@ -49,8 +48,7 @@ public class MusicService extends Service implements
     @Override
     public void onCreate() {
         super.onCreate();
-        rand = new Random();
-        songPosn=0;
+        songPosn = 0;
         player = new MediaPlayer();
         initMusicPlayer();
     }

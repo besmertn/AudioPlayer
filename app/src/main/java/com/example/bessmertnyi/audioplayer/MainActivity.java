@@ -30,7 +30,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.MediaController;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -102,21 +101,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 try {
-                    System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
                     String state = intent.getStringExtra(TelephonyManager.EXTRA_STATE);
                     if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
                         Toast.makeText(context, "Ringing State ", Toast.LENGTH_SHORT).show();
-                       // pause();
+                        musicSrv.pausePlayer();
                     }
                     if ((state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK))) {
                         Toast.makeText(context, "Received State", Toast.LENGTH_SHORT).show();
                     }
                     if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
                         Toast.makeText(context, "Idle State", Toast.LENGTH_SHORT).show();
-                       // start();
+                        musicSrv.go();
                     }
                 } catch (Exception e) {
-                    System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                     e.printStackTrace();
                 }
             }
@@ -136,10 +133,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
         SongAdapter songAdt = new SongAdapter(this, songList);
         songView.setAdapter(songAdt);
-        //setController();
 
         playBatton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -164,14 +159,12 @@ public class MainActivity extends AppCompatActivity {
 
                             if (musicSrv != null ) {
                                 int mCurrentPosition = seekBar.getProgress();
-
                                 min = mCurrentPosition / 60;
                                 sec = mCurrentPosition % 60;
 
                                 Log.e("Music Player Activity", "Minutes : "+min +" Seconds : " + sec);
                             }
                             mHandler.postDelayed(this, 1000);
-
                         }
                     };
                     mRunnable.run();}
@@ -214,7 +207,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
     }
 
     public void play(){
@@ -242,15 +234,11 @@ public class MainActivity extends AppCompatActivity {
                     int millisMax = musicSrv.getDur();
                     seekBar.setMax(millisMax / 1000);
 
-
-
                     String durationTime = String.format("%02d:%02d",
                             TimeUnit.MILLISECONDS.toMinutes(millisMax),
                             TimeUnit.MILLISECONDS.toSeconds(millisMax) -
                                     TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisMax))
                     );
-
-
 
                     String currentTime = String.format("%02d:%02d",
                             TimeUnit.MILLISECONDS.toMinutes(mCurrentPosition),
@@ -258,11 +246,7 @@ public class MainActivity extends AppCompatActivity {
                                     TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(mCurrentPosition))
                     );
 
-                   /* if(durationTime.equals(currentTime) && !durationTime.equals("00:00") ) {
-                        musicSrv.playNext();
-                    }*/
-
-                    currTimeTextView.setText(currentTime);
+                       currTimeTextView.setText(currentTime);
                     maxTimeTextView.setText(durationTime);
                 }
                 mHandler.postDelayed(this, 1000);
